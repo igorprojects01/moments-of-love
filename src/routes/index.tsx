@@ -6,10 +6,10 @@ import { FallingHearts, MusicPlayer, ParticleField } from "@/components/ambient"
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Para Elisandra ❤️ — Feliz Dia das Mães" },
+      { title: "Para Elizandra ❤️ — Feliz Dia das Mães" },
       { name: "description", content: "Uma carta cinematográfica e emocional para a mulher mais importante da minha vida." },
       { property: "og:title", content: "Para a mulher mais importante da minha vida ❤️" },
-      { property: "og:description", content: "Uma surpresa de Dia das Mães para Elisandra." },
+      { property: "og:description", content: "Uma surpresa de Dia das Mães para Elizandra." },
     ],
   }),
   component: Index,
@@ -136,7 +136,7 @@ function Index() {
               className="font-hand text-5xl md:text-7xl text-glow text-rose-glow"
               style={{ color: "oklch(0.85 0.18 12)" }}
             >
-              Bem-vinda, Elisandra ❤️
+              Bem-vinda, Elizandra ❤️
             </motion.h1>
           </motion.section>
         )}
@@ -155,7 +155,7 @@ function Index() {
             >
               <HeartIcon className="w-20 h-20 mx-auto animate-heart-pulse" />
               <h2 className="font-hand text-4xl md:text-6xl" style={{ color: "oklch(0.88 0.16 12)" }}>
-                Elisandra ❤️
+                Elizandra ❤️
               </h2>
               <p className="font-display italic text-lg md:text-2xl text-foreground/80 max-w-md mx-auto">
                 Tem algo preparado especialmente para você...

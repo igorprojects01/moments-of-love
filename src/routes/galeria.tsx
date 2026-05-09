@@ -6,7 +6,7 @@ import { FallingHearts, MusicPlayer, ParticleField } from "@/components/ambient"
 export const Route = createFileRoute("/galeria")({
   head: () => ({
     meta: [
-      { title: "Galeria — Para Elisandra ❤️" },
+      { title: "Galeria — Para Elizandra ❤️" },
       { name: "description", content: "Memórias eternizadas em uma galeria emocional." },
     ],
   }),
