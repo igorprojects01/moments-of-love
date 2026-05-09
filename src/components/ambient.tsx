@@ -69,66 +69,94 @@ export function FallingHearts({ count = 18 }: { count?: number }) {
   );
 }
 
+declare global {
+  interface Window {
+    YT: any;
+    onYouTubeIframeAPIReady: () => void;
+  }
+}
+
+const VIDEO_ID = "gzKntWygy8o";
+
 export function MusicPlayer() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playerRef = useRef<any>(null);
+  const containerId = "yt-trem-bala-player";
   const [playing, setPlaying] = useState(false);
-  const [volume, setVolume] = useState(0.5);
+  const [volume, setVolume] = useState(60);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = volume;
-  }, [volume]);
+    const init = () => {
+      playerRef.current = new window.YT.Player(containerId, {
+        videoId: VIDEO_ID,
+        playerVars: { autoplay: 0, controls: 0, modestbranding: 1, playsinline: 1, rel: 0 },
+        events: {
+          onReady: (e: any) => {
+            e.target.setVolume(volume);
+            setReady(true);
+          },
+          onStateChange: (e: any) => {
+            if (e.data === window.YT.PlayerState.ENDED) {
+              e.target.seekTo(0);
+              e.target.playVideo();
+            }
+            setPlaying(e.data === window.YT.PlayerState.PLAYING);
+          },
+        },
+      });
+    };
 
-  const toggle = async () => {
-    const a = audioRef.current;
-    if (!a) return;
-    if (playing) {
-      a.pause();
-      setPlaying(false);
+    if (window.YT && window.YT.Player) {
+      init();
     } else {
-      try {
-        a.volume = 0;
-        await a.play();
-        setPlaying(true);
-        // fade in
-        let v = 0;
-        const target = volume;
-        const step = setInterval(() => {
-          v += 0.04;
-          if (v >= target) { v = target; clearInterval(step); }
-          if (a) a.volume = v;
-        }, 100);
-      } catch {/* autoplay blocked */}
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.body.appendChild(tag);
+      window.onYouTubeIframeAPIReady = init;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (ready && playerRef.current?.setVolume) playerRef.current.setVolume(volume);
+  }, [volume, ready]);
+
+  const toggle = () => {
+    const p = playerRef.current;
+    if (!p || !ready) return;
+    if (playing) p.pauseVideo();
+    else p.playVideo();
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 glass rounded-full px-4 py-2 flex items-center gap-3 shadow-lg">
-      <audio
-        ref={audioRef}
-        loop
-        src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=relaxing-mountains-rivers-streams-running-water-18178.mp3"
-      />
-      <button
-        onClick={toggle}
-        aria-label={playing ? "Pausar" : "Tocar"}
-        className="size-9 rounded-full gradient-rose flex items-center justify-center text-white hover:scale-110 transition-transform"
-      >
-        {playing ? (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
-        ) : (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-        )}
-      </button>
-      <input
-        type="range"
-        min={0}
-        max={1}
-        step={0.01}
-        value={volume}
-        onChange={(e) => setVolume(parseFloat(e.target.value))}
-        className="w-20 accent-[oklch(0.7_0.22_12)]"
-        aria-label="Volume"
-      />
-    </div>
+    <>
+      <div style={{ position: "fixed", width: 1, height: 1, opacity: 0, pointerEvents: "none", left: -9999, top: -9999 }}>
+        <div id={containerId} />
+      </div>
+      <div className="fixed bottom-5 right-5 z-50 glass rounded-full px-4 py-2 flex items-center gap-3 shadow-lg">
+        <button
+          onClick={toggle}
+          aria-label={playing ? "Pausar música" : "Tocar Trem-Bala"}
+          className="size-9 rounded-full gradient-rose flex items-center justify-center text-white hover:scale-110 transition-transform"
+        >
+          {playing ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          )}
+        </button>
+        <span className="font-display italic text-xs text-foreground/80 hidden sm:inline whitespace-nowrap">Trem-Bala ❤️</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={volume}
+          onChange={(e) => setVolume(parseInt(e.target.value))}
+          className="w-20 accent-[oklch(0.7_0.22_12)]"
+          aria-label="Volume"
+        />
+      </div>
+    </>
   );
 }
