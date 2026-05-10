@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { FallingHearts, MusicPlayer, ParticleField } from "@/components/ambient";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/galeria")({
   head: () => ({
@@ -13,7 +14,7 @@ export const Route = createFileRoute("/galeria")({
   component: Galeria,
 });
 
-type Photo = { src: string; caption?: string; uploaded?: boolean; id?: string };
+type Photo = { src: string; caption?: string; uploaded?: boolean; path?: string };
 
 const STATIC_PHOTOS: Photo[] = [
   { src: "/imagens/foto1.jpg", caption: "Meu lugar seguro" },
@@ -33,11 +34,11 @@ const FALLBACKS = [
   "https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?w=800",
 ];
 
-const STORAGE_KEY = "galeria_uploads_v1";
+const BUCKET = "galeria";
 const MAX_DIM = 1600;
 const JPEG_QUALITY = 0.85;
 
-async function compressImage(file: File): Promise<string> {
+async function compressImage(file: File): Promise<Blob> {
   const dataUrl: string = await new Promise((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(r.result as string);
@@ -61,7 +62,9 @@ async function compressImage(file: File): Promise<string> {
   canvas.height = height;
   const ctx = canvas.getContext("2d")!;
   ctx.drawImage(img, 0, 0, width, height);
-  return canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+  return await new Promise<Blob>((resolve) =>
+    canvas.toBlob((b) => resolve(b!), "image/jpeg", JPEG_QUALITY),
+  );
 }
 
 function Galeria() {
@@ -71,46 +74,57 @@ function Galeria() {
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setUploads(JSON.parse(raw));
-    } catch {}
-  }, []);
-
-  const persist = (next: Photo[]) => {
-    setUploads(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch (e) {
-      alert("Memória do navegador cheia. Remova algumas fotos antes de adicionar mais.");
-    }
+  const loadUploads = async () => {
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .list("", { limit: 200, sortBy: { column: "created_at", order: "asc" } });
+    if (error || !data) return;
+    const items = data
+      .filter((f) => f.name && !f.name.startsWith("."))
+      .map((f) => {
+        const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(f.name);
+        return { src: pub.publicUrl, uploaded: true, path: f.name } as Photo;
+      });
+    setUploads(items);
   };
+
+  useEffect(() => {
+    loadUploads();
+  }, []);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploading(true);
     setProgress({ done: 0, total: files.length });
-    const next: Photo[] = [...uploads];
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
       if (!f.type.startsWith("image/")) continue;
       try {
-        const src = await compressImage(f);
-        next.push({ src, uploaded: true, id: `${Date.now()}-${i}` });
+        const blob = await compressImage(f);
+        const name = `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+        const { error } = await supabase.storage
+          .from(BUCKET)
+          .upload(name, blob, { contentType: "image/jpeg", upsert: false });
+        if (error) console.error(error);
       } catch (e) {
         console.error("Erro ao processar imagem", e);
       }
       setProgress({ done: i + 1, total: files.length });
     }
-    persist(next);
+    await loadUploads();
     setUploading(false);
     if (inputRef.current) inputRef.current.value = "";
   };
 
-  const removeUpload = (id?: string) => {
-    if (!id) return;
-    persist(uploads.filter((u) => u.id !== id));
+  const removeUpload = async (path?: string) => {
+    if (!path) return;
+    if (!confirm("Remover esta foto da galeria pública?")) return;
+    const { error } = await supabase.storage.from(BUCKET).remove([path]);
+    if (error) {
+      alert("Não foi possível remover esta foto.");
+      return;
+    }
+    setUploads((u) => u.filter((x) => x.path !== path));
   };
 
   const photos: Photo[] = [...STATIC_PHOTOS, ...uploads];
@@ -147,7 +161,7 @@ function Galeria() {
       <section className="relative z-10 px-6 max-w-2xl mx-auto mb-10">
         <div className="glass rounded-2xl p-5 md:p-6 text-center">
           <p className="font-display text-base md:text-lg text-foreground/85 mb-4">
-            Adicione fotos do seu celular para esta galeria
+            Adicione fotos à galeria pública
           </p>
           <input
             ref={inputRef}
@@ -166,19 +180,11 @@ function Galeria() {
             {uploading ? `Enviando ${progress.done}/${progress.total}...` : "📸 Escolher fotos"}
           </label>
           <p className="mt-3 text-xs text-foreground/60 font-display">
-            As fotos ficam salvas neste navegador (privadas, só você vê).
+            As fotos ficam visíveis para todas as pessoas que abrirem a galeria.
           </p>
           {uploads.length > 0 && (
             <p className="mt-2 text-xs text-foreground/70">
-              {uploads.length} foto(s) adicionada(s){" "}
-              <button
-                onClick={() => {
-                  if (confirm("Remover todas as fotos enviadas?")) persist([]);
-                }}
-                className="underline hover:text-foreground ml-2"
-              >
-                limpar todas
-              </button>
+              {uploads.length} foto(s) na galeria pública
             </p>
           )}
         </div>
@@ -190,7 +196,7 @@ function Galeria() {
             const rotation = (i % 2 === 0 ? -1 : 1) * (Math.random() * 3 + 1);
             return (
               <motion.div
-                key={p.id ?? i}
+                key={p.path ?? p.src ?? i}
                 initial={{ opacity: 0, y: 40, rotate: 0 }}
                 whileInView={{ opacity: 1, y: 0, rotate: rotation }}
                 viewport={{ once: true, margin: "-50px" }}
@@ -214,7 +220,7 @@ function Galeria() {
                 )}
                 {p.uploaded && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); removeUpload(p.id); }}
+                    onClick={(e) => { e.stopPropagation(); removeUpload(p.path); }}
                     className="absolute top-1 right-1 size-7 rounded-full bg-black/70 text-white text-sm flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition"
                     aria-label="Remover foto"
                   >
