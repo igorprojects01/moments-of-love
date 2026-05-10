@@ -82,7 +82,7 @@ function Index() {
         clearInterval(id);
         setTimeout(() => setShowEnding(true), 1500);
       }
-    }, 22);
+    }, 12);
     return () => clearInterval(id);
   }, [stage]);
 
