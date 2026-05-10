@@ -72,14 +72,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Feliz Dias Das Mães" },
+      { name: "description", content: "com amor, igor" },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Feliz Dias Das Mães" },
+      { property: "og:description", content: "com amor, igor" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Feliz Dias Das Mães" },
+      { name: "twitter:description", content: "com amor, igor" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/33ac8bd2-6ba6-47f6-828f-7b529f9b9704/id-preview-0e9f05df--d4fc01c9-9fd8-4780-9626-1fd6c9a9f6af.lovable.app-1778376573732.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/33ac8bd2-6ba6-47f6-828f-7b529f9b9704/id-preview-0e9f05df--d4fc01c9-9fd8-4780-9626-1fd6c9a9f6af.lovable.app-1778376573732.png" },
     ],
     links: [
       {
