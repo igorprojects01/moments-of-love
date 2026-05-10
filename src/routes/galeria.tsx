@@ -34,6 +34,30 @@ const FALLBACKS = [
   "https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?w=800",
 ];
 
+const CUTE_MESSAGES = [
+  "Você é meu mundo 💖",
+  "Minha eterna inspiração",
+  "Amor da minha vida",
+  "Meu maior presente",
+  "Te amo além do infinito",
+  "Meu coração é seu",
+  "Luz dos meus dias",
+  "Sorriso que cura tudo",
+  "Mãe, meu porto seguro",
+  "Para sempre comigo ❤️",
+  "Você é amor em pessoa",
+  "Minha rainha",
+  "Saudade que vira sorriso",
+  "Meu abraço favorito",
+  "Você ilumina tudo ✨",
+];
+
+function hashString(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
 const BUCKET = "galeria";
 const MAX_DIM = 1600;
 const JPEG_QUALITY = 0.85;
@@ -83,7 +107,8 @@ function Galeria() {
       .filter((f) => f.name && !f.name.startsWith("."))
       .map((f) => {
         const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(f.name);
-        return { src: pub.publicUrl, uploaded: true, path: f.name } as Photo;
+        const caption = CUTE_MESSAGES[hashString(f.name) % CUTE_MESSAGES.length];
+        return { src: pub.publicUrl, uploaded: true, path: f.name, caption } as Photo;
       });
     setUploads(items);
   };
